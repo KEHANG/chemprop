@@ -15,7 +15,7 @@ from torch.optim.lr_scheduler import _LRScheduler
 
 from chemprop.args import TrainArgs
 from chemprop.data import StandardScaler, MoleculeDataset
-from chemprop.models import MoleculeModel
+from chemprop.models import MoleculeModel, MoleculeModelDANN
 from chemprop.nn_utils import NoamLR
 
 
@@ -36,7 +36,7 @@ def makedirs(path: str, isfile: bool = False):
 
 
 def save_checkpoint(path: str,
-                    model: MoleculeModel,
+                    model: Union[MoleculeModel, MoleculeModelDANN],
                     scaler: StandardScaler = None,
                     features_scaler: StandardScaler = None,
                     args: TrainArgs = None):
@@ -70,7 +70,8 @@ def save_checkpoint(path: str,
 
 def load_checkpoint(path: str,
                     device: torch.device = None,
-                    logger: logging.Logger = None) -> MoleculeModel:
+                    logger: logging.Logger = None,
+                    dann: bool = False) -> Union[MoleculeModel, MoleculeModelDANN]:
     """
     Loads a model checkpoint.
 
@@ -94,7 +95,10 @@ def load_checkpoint(path: str,
         args.device = device
 
     # Build model
-    model = MoleculeModel(args)
+    if dann:
+        model = MoleculeModelDANN(args)
+    else:
+        model = MoleculeModel(args)
     model_state_dict = model.state_dict()
 
     # Skip missing parameters and parameters of mismatched size
