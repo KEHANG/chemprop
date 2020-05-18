@@ -3,7 +3,7 @@ from typing import Callable, List
 
 import torch.nn as nn
 
-from .predict import predict, predict_dann
+from .predict import predict
 from chemprop.data import MoleculeDataLoader, StandardScaler
 
 
@@ -73,7 +73,8 @@ def evaluate(model: nn.Module,
              metric_func: Callable,
              dataset_type: str,
              scaler: StandardScaler = None,
-             logger: logging.Logger = None) -> List[float]:
+             logger: logging.Logger = None,
+             dann: bool = False) -> List[float]:
     """
     Evaluates an ensemble of models on a dataset.
 
@@ -89,45 +90,8 @@ def evaluate(model: nn.Module,
     preds = predict(
         model=model,
         data_loader=data_loader,
-        scaler=scaler
-    )
-
-    targets = data_loader.targets()
-
-    results = evaluate_predictions(
-        preds=preds,
-        targets=targets,
-        num_tasks=num_tasks,
-        metric_func=metric_func,
-        dataset_type=dataset_type,
-        logger=logger
-    )
-
-    return results
-
-def evaluate_dann(model: nn.Module,
-             data_loader: MoleculeDataLoader,
-             num_tasks: int,
-             metric_func: Callable,
-             dataset_type: str,
-             scaler: StandardScaler = None,
-             logger: logging.Logger = None) -> List[float]:
-    """
-    Evaluates an ensemble of models on a dataset.
-
-    :param model: A model.
-    :param data_loader: A MoleculeDataLoader.
-    :param num_tasks: Number of tasks.
-    :param metric_func: Metric function which takes in a list of targets and a list of predictions.
-    :param dataset_type: Dataset type.
-    :param scaler: A StandardScaler object fit on the training targets.
-    :param logger: Logger.
-    :return: A list with the score for each task based on `metric_func`.
-    """
-    preds = predict_dann(
-        model=model,
-        data_loader=data_loader,
-        scaler=scaler
+        scaler=scaler,
+        dann=dann
     )
 
     targets = data_loader.targets()
