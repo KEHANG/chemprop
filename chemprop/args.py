@@ -61,6 +61,7 @@ class CommonArgs(Tap):
     max_data_size: int = None  # Maximum number of data points to load
     num_workers: int = 8   # Number of workers for the parallel data loading (0 means sequential)
     batch_size: int = 50  # Batch size
+    dann: bool = False # Whether to use domain adversarial network to handle domain adaptation
 
     def __init__(self, *args, **kwargs) -> None:
         super(CommonArgs, self).__init__(*args, **kwargs)
@@ -158,7 +159,6 @@ class TrainArgs(CommonArgs):
     separate_test_features_path: List[str] = None  # Path to file with features for separate test set
     config_path: str = None  # Path to a .json file containing arguments. Any arguments present in the config file will override arguments specified via the command line or by the defaults.
     ensemble_size: int = 1  # Number of models in ensemble
-    dann: bool = False # Whether to use domain adversarial network to handle domain adaptation
 
     # Training arguments
     epochs: int = 30  # Number of epochs to run

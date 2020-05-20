@@ -80,11 +80,14 @@ def make_predictions(args: PredictArgs, smiles: List[str] = None) -> List[Option
     print(f'Predicting with an ensemble of {len(args.checkpoint_paths)} models')
     for checkpoint_path in tqdm(args.checkpoint_paths, total=len(args.checkpoint_paths)):
         # Load model
-        model = load_checkpoint(checkpoint_path, device=args.device)
+        model = load_checkpoint(checkpoint_path,
+                                device=args.device,
+                                dann=args.dann)
         model_preds = predict(
             model=model,
             data_loader=test_data_loader,
-            scaler=scaler
+            scaler=scaler,
+            dann=args.dann
         )
         sum_preds += np.array(model_preds)
 
