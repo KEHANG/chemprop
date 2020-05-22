@@ -41,8 +41,7 @@ def train_dann(model: nn.Module,
     debug = logger.debug if logger is not None else print
     
     model.train()
-    loss_sum, iter_count = 0, 0
-
+    loss_sum_y, loss_sum_d1, loss_sum_d2, iter_count = 0, 0, 0, 0
     steps = 0
     data_test_iter = iter(data_loader_test)
 
@@ -72,13 +71,13 @@ def train_dann(model: nn.Module,
 
         if args.dataset_type == 'multiclass':
             targets = targets.long()
-            loss = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
+            loss_y = torch.cat([loss_func(preds[:, target_index, :], targets[:, target_index]).unsqueeze(1) for target_index in range(preds.size(1))], dim=1) * class_weights * mask
         else:
-            loss = loss_func(preds, targets) * class_weights * mask
+            loss_y = loss_func(preds, targets) * class_weights * mask
         # average predicton loss
-        loss = loss.sum() / mask.sum()
+        loss_y = loss_y.sum() / mask.sum()
         # average domain loss from train data
-        loss += loss_func(domain_preds, domain_labels).sum() / domain_labels.shape[0]
+        loss_d1 = loss_func(domain_preds, domain_labels).sum() / domain_labels.shape[0]
 
         # Run model over test data
         if steps >= len(data_loader_test):
@@ -94,10 +93,13 @@ def train_dann(model: nn.Module,
         domain_labels_test = domain_labels_test.to(domain_preds_test.device)
         
         # average domain loss from test data
-        loss += loss_func(domain_preds_test, domain_labels_test).sum() / domain_labels_test.shape[0]
+        loss_d2 = loss_func(domain_preds_test, domain_labels_test).sum() / domain_labels_test.shape[0]
 
         # get loss sum over previous steps
-        loss_sum += loss.item()
+        loss = loss_y + loss_d1 + loss_d2
+        loss_sum_y += loss_y.item()
+        loss_sum_d1 += loss_d1.item()
+        loss_sum_d2 += loss_d2.item()
         iter_count += 1
 
         # backpropagate
@@ -115,14 +117,18 @@ def train_dann(model: nn.Module,
             lrs = scheduler.get_lr()
             pnorm = compute_pnorm(model)
             gnorm = compute_gnorm(model)
-            loss_avg = loss_sum / iter_count
-            loss_sum, iter_count = 0, 0
+            loss_avg_y = loss_sum_y / iter_count
+            loss_avg_d1 = loss_sum_d1 / iter_count
+            loss_avg_d2 = loss_sum_d2 / iter_count
+            loss_sum_y, loss_sum_d1, loss_sum_d2, iter_count = 0, 0, 0, 0
 
             lrs_str = ', '.join(f'lr_{i} = {lr:.4e}' for i, lr in enumerate(lrs))
-            debug(f'Loss = {loss_avg:.4e}, PNorm = {pnorm:.4f}, GNorm = {gnorm:.4f}, {lrs_str}')
+            debug(f'L_y = {loss_avg_y:.4e}, L_d1 = {loss_avg_d1:.4e}, L_d2 = {loss_avg_d2:.4e}, alpha = {alpha:.4e}, PNorm = {pnorm:.4f}, GNorm = {gnorm:.4f}, {lrs_str}')
 
             if writer is not None:
-                writer.add_scalar('train_loss', loss_avg, n_iter)
+                writer.add_scalar('train_loss_y', loss_avg_y, n_iter)
+                writer.add_scalar('train_loss_d1', loss_avg_d1, n_iter)
+                writer.add_scalar('train_loss_d2', loss_avg_d2, n_iter)
                 writer.add_scalar('param_norm', pnorm, n_iter)
                 writer.add_scalar('gradient_norm', gnorm, n_iter)
                 for i, lr in enumerate(lrs):
