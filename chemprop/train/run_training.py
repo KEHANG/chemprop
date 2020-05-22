@@ -98,7 +98,8 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
 
     args.train_data_size = len(train_data)
     
-    debug(f'Total size = {len(data):,} | '
+    total_data_size = len(train_data) + len(val_data) + len(test_data)
+    debug(f'Total size = {total_data_size:,} | '
           f'train size = {len(train_data):,} | val size = {len(val_data):,} | test size = {len(test_data):,}')
 
     # Initialize scaler and scale training targets by subtracting mean and dividing standard deviation (regression only)
