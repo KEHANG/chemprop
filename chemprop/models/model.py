@@ -268,16 +268,16 @@ class MoleculeModelDANN(nn.Module):
 
         feature = self.encoder(batch, features_batch)
         target_output = self.ffn(feature)
+        reverse_feature = ReverseLayerF.apply(feature, alpha)
+        domain_output = self.domain_classifier(reverse_feature)
 
         # Don't apply sigmoid during training b/c using BCEWithLogitsLoss
         if self.classification and not self.training:
             target_output = self.sigmoid(target_output)
+            domain_output = self.sigmoid(domain_output)
         if self.multiclass:
             target_output = target_output.reshape((target_output.size(0), -1, self.num_classes))  # batch size x num targets x num classes per target
             if not self.training:
                 target_output = self.multiclass_softmax(target_output)  # to get probabilities during evaluation, but not during training as we're using CrossEntropyLoss
-
-        reverse_feature = ReverseLayerF.apply(feature, alpha)
-        domain_output = self.domain_classifier(reverse_feature)
 
         return target_output, domain_output
