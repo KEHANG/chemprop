@@ -98,7 +98,7 @@ def train_dann(model: nn.Module,
 
         # get loss sum over previous steps
         loss_sum += loss.item()
-        iter_count += len(batch)
+        iter_count += 1
 
         # backpropagate
         loss.backward()
