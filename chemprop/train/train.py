@@ -43,7 +43,6 @@ def train_dann(model: nn.Module,
     model.train()
     loss_sum_y, loss_sum_d1, loss_sum_d2, iter_count = 0, 0, 0, 0
     steps = 0
-    data_test_iter = iter(data_loader_test)
 
     total_steps = len(data_loader_train)
     for batch in tqdm(data_loader_train, total=total_steps):
@@ -80,8 +79,7 @@ def train_dann(model: nn.Module,
         loss_d1 = loss_func(domain_preds, domain_labels).sum() / domain_labels.shape[0]
 
         # Run model over test data
-        if steps >= len(data_loader_test):
-            steps = 0
+        if steps % len(data_loader_test) == 0:
             data_test_iter = iter(data_loader_test)
 
         batch_test = data_test_iter.next()
