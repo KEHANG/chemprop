@@ -240,6 +240,21 @@ def run_training(args: TrainArgs, logger: Logger = None) -> List[float]:
             debug(f'Validation {args.metric} = {avg_val_score:.6f}')
             writer.add_scalar(f'validation_{args.metric}', avg_val_score, n_iter)
 
+            # Average test score
+            test_scores = evaluate(
+                model=model,
+                data_loader=test_data_loader,
+                num_tasks=args.num_tasks,
+                metric_func=metric_func,
+                dataset_type=args.dataset_type,
+                scaler=scaler,
+                logger=logger,
+                dann=args.dann
+            )
+            avg_test_score = np.nanmean(test_scores)
+            debug(f'Test {args.metric} = {avg_test_score:.6f}')
+            writer.add_scalar(f'test_{args.metric}', avg_test_score, n_iter)
+
             if args.show_individual_scores:
                 # Individual validation scores
                 for task_name, val_score in zip(args.task_names, val_scores):
