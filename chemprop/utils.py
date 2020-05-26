@@ -281,6 +281,11 @@ def build_optimizer(model: nn.Module, args: TrainArgs) -> Optimizer:
     """
     params = [{'params': model.parameters(), 'lr': args.init_lr, 'weight_decay': 0}]
 
+    if isinstance(model, MoleculeModelDANN):
+        params = [{'params': model.encoder.parameters(), 'lr': args.init_lr, 'weight_decay': 0},
+                  {'params': model.ffn.parameters(), 'lr': args.init_lr, 'weight_decay': 0},
+                  {'params': model.domain_classifier.parameters(), 'lr': args.init_lr, 'weight_decay': 0}]
+
     return Adam(params)
 
 
@@ -294,6 +299,17 @@ def build_lr_scheduler(optimizer: Optimizer, args: TrainArgs, total_epochs: List
     :return: An initialized learning rate scheduler.
     """
     # Learning rate scheduler
+    if args.dann:
+        return NoamLR(
+            optimizer=optimizer,
+            warmup_epochs=[args.warmup_epochs]*3,
+            total_epochs=[args.epochs]*3,
+            steps_per_epoch=args.train_data_size // args.batch_size,
+            init_lr=[args.init_lr, args.init_lr, args.init_lr*3],
+            max_lr=[args.max_lr, args.max_lr, args.max_lr*3],
+            final_lr=[args.final_lr, args.final_lr, args.final_lr*3]
+        )
+
     return NoamLR(
         optimizer=optimizer,
         warmup_epochs=[args.warmup_epochs],
