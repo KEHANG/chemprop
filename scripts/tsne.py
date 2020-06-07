@@ -3,6 +3,7 @@ import sys
 import time
 from typing import List
 
+import torch
 from matplotlib import offsetbox
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -13,12 +14,10 @@ from sklearn.manifold import TSNE
 from tap import Tap
 from tqdm import tqdm
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
-from chemprop.data.utils import get_smiles
+from chemprop.data.utils import get_smiles, get_data_from_smiles
 from chemprop.features import get_features_generator
-from chemprop.utils import makedirs
-
+from chemprop.utils import makedirs, load_checkpoint
+from chemprop.nn_utils import compute_molecule_encodings
 
 class Args(Tap):
     smiles_paths: List[str]  # Path to .csv files containing smiles strings (with header)
@@ -29,7 +28,8 @@ class Args(Tap):
     plot_molecules: bool = False  # Whether to plot images of molecules instead of points
     max_per_dataset: int = 10000  # Maximum number of molecules per dataset; larger datasets will be subsampled to this size
     save_path: str  # Path to a .png file where the t-SNE plot will be saved
-
+    checkpoint_path: str
+    dann: bool = False
 
 def compare_datasets_tsne(args: Args):
     if len(args.smiles_paths) > len(args.colors):
@@ -57,15 +57,24 @@ def compare_datasets_tsne(args: Args):
         slices.append(slice(len(smiles), len(smiles) + len(new_smiles)))
         smiles += new_smiles
 
-    # Compute Morgan fingerprints
-    print('Computing Morgan fingerprints')
-    morgan_generator = get_features_generator('morgan')
-    morgans = [morgan_generator(smile) for smile in tqdm(smiles, total=len(smiles))]
+    # Compute Model fingerprints
+    print('Computing Model fingerprints')
+    full_data = get_data_from_smiles(smiles=smiles, skip_invalid_smiles=False, features_generator=None)
+    # Load model
+    model = load_checkpoint(args.checkpoint_path,
+                            device=torch.device('cpu'),
+                            dann=args.dann)
+    fingerprints = compute_molecule_encodings(model, full_data, batch_size=100)
+
+    # # Compute Morgan fingerprints
+    # print('Computing Morgan fingerprints')
+    # morgan_generator = get_features_generator('morgan')
+    # fingerprints = [morgan_generator(smile) for smile in tqdm(smiles, total=len(smiles))]
 
     print('Running t-SNE')
     start = time.time()
     tsne = TSNE(n_components=2, init='pca', random_state=0, metric='jaccard')
-    X = tsne.fit_transform(morgans)
+    X = tsne.fit_transform(fingerprints)
     print(f'time = {time.time() - start:.2f} seconds')
 
     print('Plotting t-SNE')

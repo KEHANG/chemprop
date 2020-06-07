@@ -112,6 +112,14 @@ class MoleculeModel(nn.Module):
         """
         return self.ffn[:-1](self.encoder(*input))
 
+    def encode(self, *input):
+        """
+        Computes feature vectors of the input by running encoder.
+        :param input: Input.
+        :return: The feature vectors computed by the encoder of the MoleculeModel.
+        """
+        return self.encoder(*input)
+
     def forward(self, *input):
         """
         Runs the MoleculeModel on input.
@@ -254,6 +262,14 @@ class MoleculeModelDANN(nn.Module):
         :return: The feature vectors computed by the MoleculeModel.
         """
         return self.ffn[:-1](self.encoder(batch, features_batch))
+
+    def encode(self, batch, features_batch):
+        """
+        Computes feature vectors of the input by running encoder.
+        :param input: Input.
+        :return: The feature vectors computed by the encoder of the MoleculeModel.
+        """
+        return self.encoder(batch, features_batch)
 
     def forward(self, batch, features_batch, alpha=0.5):
         """
