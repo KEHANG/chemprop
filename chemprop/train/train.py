@@ -15,7 +15,7 @@ from chemprop.nn_utils import compute_gnorm, compute_pnorm, NoamLR
 
 def train_dann(model: nn.Module,
                 data_loader_train: MoleculeDataLoader,
-                data_loader_test: MoleculeDataLoader,
+                data_loader_target: MoleculeDataLoader,
                 loss_func: Callable,
                 optimizer: Optimizer,
                 scheduler: _LRScheduler,
@@ -28,7 +28,7 @@ def train_dann(model: nn.Module,
 
     :param model: Model.
     :param data_loader_source: A MoleculeDataLoader hosting training data.
-    :param data_loader_test: A MoleculeDataLoader hosting testing data.
+    :param data_loader_target: A MoleculeDataLoader hosting target domain data.
     :param loss_func: Loss function.
     :param optimizer: An Optimizer.
     :param scheduler: A learning rate scheduler.
@@ -50,6 +50,7 @@ def train_dann(model: nn.Module,
         current_epoch = int(n_iter/len(data_loader_train._dataset))
         p = float(steps + current_epoch  * total_steps) / args.epochs / total_steps
         alpha = 2. / (1. + np.exp(-10 * p)) - 1
+        alpha = alpha*0.1
 
         # Prepare batch from train data
         batch: MoleculeDataset
@@ -79,8 +80,8 @@ def train_dann(model: nn.Module,
         loss_d1 = loss_func(domain_preds, domain_labels).sum() / domain_labels.shape[0]
 
         # Run model over test data
-        if steps % len(data_loader_test) == 0:
-            data_test_iter = iter(data_loader_test)
+        if steps % len(data_loader_target) == 0:
+            data_test_iter = iter(data_loader_target)
 
         batch_test = data_test_iter.next()
         batch_test: MoleculeDataset
