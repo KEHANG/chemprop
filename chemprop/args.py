@@ -166,6 +166,7 @@ class TrainArgs(CommonArgs):
     init_lr: float = 1e-4  # Initial learning rate
     max_lr: float = 1e-3  # Maximum learning rate
     final_lr: float = 1e-4  # Final learning rate
+    domain_acceleration_lr: int = 1 # acceleration used for domain classifier learning rate
     class_balance: bool = False  # Trains with an equal number of positives and negatives in each batch (only for single task classification)
 
     def __init__(self, *args, **kwargs) -> None:
